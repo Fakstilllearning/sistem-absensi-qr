@@ -1,28 +1,12 @@
 import { useState } from "react";
-import { signIn, signInWithGoogle, friendlyAuthError } from "@/lib/auth";
+import { signInWithGoogle, friendlyAuthError } from "@/lib/auth";
 import { BrandLockup, LogoUpiFpok } from "@/components/brand";
-import { Button, Input } from "@/components/ui";
 import { useAuth } from "@/lib/auth-context";
 
 export function LoginPage() {
   const { refresh } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    try {
-      await signIn(email.trim(), password);
-      await refresh();
-    } catch (err) {
-      setError(friendlyAuthError((err as Error).message));
-      setLoading(false);
-    }
-  };
 
   const googleLogin = async () => {
     setError(null);
@@ -46,49 +30,17 @@ export function LoginPage() {
             </p>
           </div>
 
-          <form
-            onSubmit={submit}
-            className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
-          >
+          <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
             <h1 className="mb-1 text-xl font-bold text-slate-900">Masuk</h1>
             <p className="mb-5 text-sm text-slate-500">
-              Gunakan akun panitia yang diberikan admin.
+              Gunakan akun Google Anda untuk masuk. Saat pertama kali masuk, Anda akan memilih peran (Admin, Scanner, atau Viewer).
             </p>
 
-            <div className="flex flex-col gap-4">
-              <Input
-                label="Email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="panitia@upi.edu"
-                required
-              />
-              <Input
-                label="Password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-              {error ? (
-                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {error}
-                </p>
-              ) : null}
-              <Button type="submit" loading={loading} size="lg" className="w-full">
-                Masuk
-              </Button>
-            </div>
-
-            <div className="my-5 flex items-center gap-3">
-              <div className="h-px flex-1 bg-slate-200" />
-              <span className="text-xs font-medium text-slate-400">atau</span>
-              <div className="h-px flex-1 bg-slate-200" />
-            </div>
+            {error ? (
+              <p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                {error}
+              </p>
+            ) : null}
 
             <button
               type="button"
@@ -102,12 +54,13 @@ export function LoginPage() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
               </svg>
-              Masuk dengan Google
+              {loading ? "Memuat…" : "Masuk dengan Google"}
             </button>
-            <p className="mt-3 text-center text-xs text-slate-400">
-              Pengguna Google baru akan memilih peran (Admin, Scanner, atau Viewer) saat masuk pertama kali.
+
+            <p className="mt-4 rounded-lg bg-slate-50 px-3 py-2 text-center text-xs text-slate-500">
+              Hanya panitia yang memerlukan akun. Mahasiswa cukup menampilkan QR Code untuk discan.
             </p>
-          </form>
+          </div>
 
           <div className="mt-8 flex items-center justify-center">
             <LogoUpiFpok className="h-14 w-auto opacity-80" />
