@@ -9,27 +9,73 @@ Sistem absensi berbasis QR Code untuk kegiatan kaderisasi mahasiswa baru Program
 - **QR Scanner:** html5-qrcode
 - **QR Generator:** qrcode (npm)
 - **Backend:** Supabase (PostgreSQL + Auth + Realtime)
+- **Autentikasi:** Google OAuth via Supabase Auth
 - **Hosting:** Vercel
 
-## Akun Testing
+## Cara Login
 
-Sistem telah dilengkapi tiga akun testing untuk validasi sebelum digunakan secara nyata:
+Sistem menggunakan **Google OAuth** — tidak ada login dengan email/password manual.
 
-| Role     | Email                       | Password        |
-|----------|-----------------------------|-----------------|
-| ADMIN    | admin@kaderisasi.upi.edu    | admin12345      |
-| SCANNER  | scanner@kaderisasi.upi.edu  | scanner12345    |
-| VIEWER   | viewer@kaderisasi.upi.edu   | viewer12345     |
+1. Buka website, klik **Masuk dengan Google**.
+2. Login dengan akun Google Anda.
+3. Saat pertama kali masuk, Anda akan diminta memilih peran:
+   - **Admin** — kelola sesi, import data, koreksi absensi, lihat audit log
+   - **Scanner** — pindai QR Code mahasiswa untuk mencatat kehadiran
+   - **Viewer** — lihat dashboard, data mahasiswa, absensi, dan laporan
+4. Pilihan peran hanya bisa dilakukan sekali. Hubungi admin jika perlu diubah.
+5. Login berikutnya langsung masuk ke dashboard sesuai peran yang dipilih.
+
+> Hanya panitia yang memerlukan akun. Mahasiswa cukup menampilkan QR Code untuk discan.
+
+## Setup Google OAuth
+
+### 1. Google Cloud Console
+
+1. Buka [Google Cloud Console](https://console.cloud.google.com/) dan buat project baru.
+2. Buka **APIs & Services > OAuth consent screen**.
+3. Pilih **User Type: External**, lalu isi:
+   - **App name:** `Absensi HMP PJKR`
+   - **User support email:** email Anda
+   - **Developer contact information:** email Anda
+4. Pada tab **Scopes**, tambahkan `userinfo.email`, `userinfo.profile`, dan `openid`.
+5. Pada tab **Test users**, tambahkan email panitia yang akan login.
+6. Buka **APIs & Services > Credentials > Create Credentials > OAuth client ID**.
+7. Pilih **Web application**, lalu tambahkan **Authorized redirect URI**:
+   ```
+   https://<project-ref>.supabase.co/auth/v1/callback
+   ```
+   (`<project-ref>` ada di dashboard Supabase > Settings > General > Reference ID, atau di Authentication > Providers > Google)
+8. Catat **Client ID** dan **Client Secret**.
+
+### 2. Dashboard Supabase
+
+1. Buka [dashboard Supabase](https://supabase.com/dashboard) > **Authentication > Providers**.
+2. Klik **Google**, aktifkan, lalu tempelkan **Client ID** dan **Client Secret**.
+3. Buka **Authentication > URL Configuration**.
+4. Isi **Site URL** dengan URL aplikasi (misalnya `http://localhost:5173` untuk development).
+5. Tambahkan URL yang sama di **Redirect URLs**.
+6. Klik **Save**.
+
+> Selama aplikasi masih dalam status **Testing** di Google Cloud, hanya email yang terdaftar di "Test users" yang bisa login. Klik **Publish App** di OAuth consent screen jika sudah siap untuk semua panitia.
+
+## Menu & Hak Akses
+
+| Menu | Admin | Scanner | Viewer |
+|------|:-----:|:-------:|:------:|
+| Dashboard | ✓ | ✓ | ✓ |
+| Scanner | ✓ | ✓ | — |
+| Mahasiswa | ✓ | — | ✓ |
+| Absensi | ✓ | — | ✓ |
+| Sesi | ✓ | — | — |
+| Import Data | ✓ | — | — |
+| Laporan | ✓ | — | ✓ |
+| Audit Log | ✓ | — | — |
 
 ## Cara Menggunakan
 
-### 1. Login
+### 1. Import Data Mahasiswa
 
-Buka website, masuk menggunakan akun yang diberikan. Setiap role memiliki menu berbeda.
-
-### 2. Import Data Mahasiswa
-
-1. Login sebagai **ADMIN**.
+1. Login sebagai **Admin**.
 2. Buka menu **Import Data**.
 3. Siapkan file CSV dari Excel dengan kolom: `nim`, `name`, `class`, `group`, `gender`, `year`.
 4. Upload file CSV.
@@ -37,16 +83,16 @@ Buka website, masuk menggunakan akun yang diberikan. Setiap role memiliki menu b
 6. Pilih mode import (Update Existing / Insert New / Skip Existing).
 7. Klik **Konfirmasi Import**.
 
-### 3. Membuat dan Membuka Sesi
+### 2. Membuat dan Membuka Sesi
 
-1. Login sebagai **ADMIN**.
+1. Login sebagai **Admin**.
 2. Buka menu **Sesi**.
 3. Klik **Sesi Baru**, isi nama dan tanggal.
 4. Klik **Buka Sesi** untuk mengaktifkan scanner.
 
-### 4. Melakukan Scan Absensi
+### 3. Melakukan Scan Absensi
 
-1. Login sebagai **SCANNER** atau **ADMIN**.
+1. Login sebagai **Scanner** atau **Admin**.
 2. Buka menu **Scanner**.
 3. Pastikan ada sesi yang berstatus **OPEN**.
 4. Klik **Buka Kamera**, izinkan akses kamera.
@@ -54,9 +100,9 @@ Buka website, masuk menggunakan akun yang diberikan. Setiap role memiliki menu b
 6. Sistem menampilkan hasil: BERHASIL / SUDAH ABSEN / QR TIDAK VALID.
 7. Scanner otomatis siap untuk scan berikutnya.
 
-### 5. Koreksi Manual
+### 4. Koreksi Manual
 
-1. Login sebagai **ADMIN**.
+1. Login sebagai **Admin**.
 2. Buka menu **Absensi**.
 3. Cari mahasiswa berdasarkan NIM atau nama.
 4. Klik **Edit** pada baris mahasiswa.
@@ -65,22 +111,22 @@ Buka website, masuk menggunakan akun yang diberikan. Setiap role memiliki menu b
 
 Atau gunakan tombol **Absensi Manual** untuk mencatat absensi mahasiswa yang belum memiliki record.
 
-### 6. Menutup Sesi
+### 5. Menutup Sesi
 
-1. Login sebagai **ADMIN**.
+1. Login sebagai **Admin**.
 2. Buka menu **Sesi**.
 3. Klik **Tutup Sesi** pada sesi yang aktif.
 4. Konfirmasi penutupan.
 5. Semua mahasiswa tanpa catatan absensi otomatis menjadi **ALPA**.
 
-### 7. Melihat Laporan
+### 6. Melihat Laporan
 
-1. Login sebagai **ADMIN** atau **VIEWER**.
+1. Login sebagai **Admin** atau **Viewer**.
 2. Buka menu **Laporan**.
 3. Filter berdasarkan sesi.
 4. Klik **Export Weekly CSV** untuk mengunduh rekap mingguan.
 
-### 8. Export Absensi
+### 7. Export Absensi
 
 1. Buka menu **Absensi**.
 2. Atur filter sesuai kebutuhan.
@@ -142,17 +188,32 @@ npm run dev
 
 ### Tabel
 
-- `profiles` - data pengguna dan role
-- `students` - data mahasiswa dan QR token
-- `attendance_sessions` - sesi absensi
-- `attendance_records` - catatan absensi (unique: student_id + session_id)
-- `audit_logs` - riwayat aktivitas
+- `profiles` — data pengguna dan role (ADMIN / SCANNER / VIEWER / PENDING)
+- `students` — data mahasiswa dan QR token
+- `attendance_sessions` — sesi absensi (DRAFT / OPEN / CLOSED)
+- `attendance_records` — catatan absensi (unique: student_id + session_id)
+- `audit_logs` — riwayat aktivitas
 
 ### Fungsi Database
 
-- `record_attendance(p_qr_token, p_session_id)` - mencatat absensi scan dengan validasi penuh
-- `close_session(p_session_id)` - menutup sesi dan membuat record ALPA otomatis
-- `user_has_role(allowed_roles)` - cek role pengguna untuk RLS
+- `record_attendance(p_qr_token, p_session_id)` — mencatat absensi scan dengan validasi penuh
+- `close_session(p_session_id)` — menutup sesi dan membuat record ALPA otomatis
+- `set_own_role(p_role)` — set peran pengguna baru (dipanggil satu kali saat pertama login)
+- `user_has_role(allowed_roles)` — cek role pengguna untuk RLS
+
+## File Penting
+
+| File | Fungsi |
+|------|--------|
+| `src/pages/login.tsx` | Tampilan halaman login (tombol Google OAuth) |
+| `src/pages/role-select.tsx` | Tampilan pemilihan peran untuk pengguna baru |
+| `src/lib/auth.ts` | Logika autentikasi (Google OAuth, set role, logout) |
+| `src/lib/auth-context.tsx` | State autentikasi global (provider) |
+| `src/lib/supabase.ts` | Konfigurasi Supabase client dan tipe data |
+| `src/components/shell.tsx` | Layout utama (sidebar, header, navigasi) |
+| `src/components/ui.tsx` | Komponen UI reusable (tombol, input, kartu, dll) |
+| `src/components/brand.tsx` | Logo dan branding HMP PJKR |
+| `src/index.css` | Tema warna dan gaya keseluruhan aplikasi |
 
 ## Troubleshooting
 
@@ -161,6 +222,8 @@ npm run dev
 | Kamera tidak aktif | Aktifkan izin kamera di pengaturan browser. Gunakan HTTPS. |
 | Scanner menampilkan "Belum ada sesi terbuka" | Admin harus membuka sesi di menu Sesi. |
 | Import CSV gagal | Pastikan kolom `nim`, `name`, `class` ada dan terisi. |
-| Login gagal | Periksa email dan password. Hubungi admin jika akun belum dibuat. |
+| Login Google gagal | Periksa konfigurasi OAuth di Google Cloud Console dan Supabase. Pastikan redirect URI benar. |
+| Email tidak bisa login | Jika aplikasi masih dalam status Testing di Google Cloud, daftarkan email di OAuth consent screen > Test users. |
 | Dashboard tidak update | Periksa koneksi internet. Realtime membutuhkan koneksi stabil. |
 | "SUDAH ABSEN" muncul | Mahasiswa sudah memiliki catatan absensi untuk sesi tersebut. |
+| Peran salah dipilih | Hubungi admin untuk mengubah peran melalui database. |
