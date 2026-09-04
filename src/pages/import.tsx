@@ -1,9 +1,10 @@
 import { useRef, useState } from "react";
-import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle2, AlertTriangle, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { hasRole } from "@/lib/auth";
 import { useAuth } from "@/lib/auth-context";
 import { useToasts } from "@/lib/use-toasts";
-import { Badge, Button, EmptyState, Select, Spinner } from "@/components/ui";
+import { Badge, Button, EmptyState, Modal, Select, Spinner } from "@/components/ui";
 
 type ParsedRow = {
   rowNumber: number;
@@ -27,6 +28,10 @@ export function ImportPage() {
   const [importing, setImporting] = useState(false);
   const [mode, setMode] = useState<"INSERT" | "UPSERT" | "SKIP">("UPSERT");
   const [summary, setSummary] = useState<{ inserted: number; updated: number; skipped: number; invalid: number } | null>(null);
+  const [showClear, setShowClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
+
+  const isAdmin = hasRole(profile, "ADMIN");
 
   const parseCsv = (text: string): ParsedRow[] => {
     const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
@@ -156,11 +161,45 @@ export function ImportPage() {
     }
   };
 
+  const clearAllStudents = async () => {
+    setClearing(true);
+    const { data: deleted, error: err } = await supabase.from("students").delete().neq("id", "00000000-0000-0000-0000-000000000000").select("id");
+    setClearing(false);
+    setShowClear(false);
+    if (err) {
+      error("Gagal menghapus data mahasiswa.");
+      return;
+    }
+    const count = deleted?.length ?? 0;
+    success(`${count} data mahasiswa berhasil dihapus.`);
+    setRows([]);
+    setSummary(null);
+    setFileName("");
+    if (profile) {
+      const { data: prof } = await supabase.from("profiles").select("id").eq("auth_user_id", profile.auth_user_id).maybeSingle();
+      if (prof) {
+        await supabase.from("audit_logs").insert({
+          user_id: (prof as { id: string }).id,
+          action: "CLEAR_ALL_STUDENTS",
+          target_type: "students",
+          metadata: { deleted_count: count },
+        });
+      }
+    }
+  };
+
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Import Data Mahasiswa</h1>
-        <p className="text-sm text-slate-500">Unggah file CSV dari Excel untuk menambah peserta kaderisasi.</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Import Data Mahasiswa</h1>
+          <p className="text-sm text-slate-500">Unggah file CSV dari Excel untuk menambah peserta kaderisasi.</p>
+        </div>
+        {isAdmin ? (
+          <Button variant="ghost" onClick={() => setShowClear(true)} className="text-red-600 hover:bg-red-50">
+            <Trash2 className="w-4 h-4" /> Hapus Semua Data
+          </Button>
+        ) : null}
       </div>
 
       <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-white p-8 text-center">
@@ -283,6 +322,25 @@ export function ImportPage() {
       {rows.length === 0 && !parsing && !summary ? (
         <EmptyState title="Belum ada file" hint="Gunakan kolom no_urut, nim, nama, jenis_kelamin, dan kelas." />
       ) : null}
+
+      <Modal open={showClear} title="Hapus Semua Data Mahasiswa" onClose={() => setShowClear(false)}>
+        <div className="space-y-4">
+          <div className="rounded-xl bg-red-50 p-4 ring-1 ring-red-200">
+            <p className="flex items-center gap-2 text-sm font-semibold text-red-700">
+              <AlertTriangle className="w-4 h-4" /> Peringatan
+            </p>
+            <p className="mt-1 text-sm text-red-700">
+              Semua data mahasiswa akan dihapus permanen, termasuk QR Code dan data absensi yang terkait. Tindakan ini tidak dapat dibatalkan.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={clearAllStudents} loading={clearing} className="flex-1 bg-red-600 hover:bg-red-700">
+              Ya, Hapus Semua
+            </Button>
+            <Button variant="secondary" onClick={() => setShowClear(false)} className="flex-1">Batal</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
