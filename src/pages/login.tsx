@@ -23,7 +23,7 @@ export function LoginPage() {
     <div
       className="min-h-screen bg-cover bg-center bg-no-repeat relative"
       style={{
-        backgroundImage: "url('/images/image.png')",
+        backgroundImage: "url('/public/image.png')",
       }}
     >
       <div className="absolute inset-0 bg-slate-900/55" />
