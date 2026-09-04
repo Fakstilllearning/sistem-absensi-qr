@@ -115,7 +115,7 @@ export function StudentsPage() {
             <span>No</span>
             <span>Nama</span>
             <span>NIM</span>
-            <span>Dosen</span>
+            <span>Jenis Kelamin</span>
             <span>Kelas</span>
             <span>QR</span>
             <span className="text-right">Aksi</span>
@@ -132,7 +132,7 @@ export function StudentsPage() {
                   <p className="truncate text-xs text-slate-500 sm:hidden">{s.no_urut ?? "-"} · {s.nim} · {s.class}</p>
                 </div>
                 <p className="hidden text-sm text-slate-600 sm:block">{s.nim}</p>
-                <p className="hidden truncate text-sm text-slate-600 sm:block">{s.dosen_pembimbing ?? "-"}</p>
+                <p className="hidden truncate text-sm text-slate-600 sm:block">{s.gender ?? "-"}</p>
                 <p className="hidden text-sm text-slate-600 sm:block">{s.class}</p>
                 <div className="hidden sm:block">
                   <Badge tone={s.qr_status === "ACTIVE" ? "success" : "danger"}>
@@ -179,7 +179,7 @@ export function StudentsPage() {
               <div className="w-full space-y-1 text-center">
                 <p className="text-sm font-bold text-slate-900">{selected.name}</p>
                 <p className="text-sm text-slate-600">NIM: {selected.nim}</p>
-                <p className="text-sm text-slate-600">Dosen: {selected.dosen_pembimbing ?? "-"}</p>
+                <p className="text-sm text-slate-600">Jenis Kelamin: {selected.gender ?? "-"}</p>
                 <p className="text-sm text-slate-600">Kelas: {selected.class}</p>
               </div>
             </div>
