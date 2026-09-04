@@ -77,7 +77,7 @@ Sistem menggunakan **Google OAuth** — tidak ada login dengan email/password ma
 
 1. Login sebagai **Admin**.
 2. Buka menu **Import Data**.
-3. Siapkan file CSV dari Excel dengan kolom: `nim`, `name`, `class`, `group`, `gender`, `year`.
+3. Siapkan file CSV dari Excel dengan kolom: `no_urut`, `nim`, `nama`, `jenis_kelamin`, `kelas`. Kolom opsional: `group`, `year`.
 4. Upload file CSV.
 5. Sistem akan menampilkan preview, validasi, dan jumlah baris bermasalah.
 6. Pilih mode import (Update Existing / Insert New / Skip Existing).
@@ -221,7 +221,7 @@ npm run dev
 |---------|--------|
 | Kamera tidak aktif | Aktifkan izin kamera di pengaturan browser. Gunakan HTTPS. |
 | Scanner menampilkan "Belum ada sesi terbuka" | Admin harus membuka sesi di menu Sesi. |
-| Import CSV gagal | Pastikan kolom `nim`, `name`, `class` ada dan terisi. |
+| Import CSV gagal | Pastikan kolom `no_urut`, `nim`, `nama`, `jenis_kelamin`, `kelas` ada dan terisi. |
 | Login Google gagal | Periksa konfigurasi OAuth di Google Cloud Console dan Supabase. Pastikan redirect URI benar. |
 | Email tidak bisa login | Jika aplikasi masih dalam status Testing di Google Cloud, daftarkan email di OAuth consent screen > Test users. |
 | Dashboard tidak update | Periksa koneksi internet. Realtime membutuhkan koneksi stabil. |
