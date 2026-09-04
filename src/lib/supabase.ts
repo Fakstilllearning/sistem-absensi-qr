@@ -38,7 +38,6 @@ export type Student = {
   gender: string | null;
   year: number | null;
   no_urut: number | null;
-  dosen_pembimbing: string | null;
   qr_token: string;
   qr_status: "ACTIVE" | "DISABLED";
 };
@@ -66,7 +65,7 @@ export type AttendanceRecord = {
 };
 
 export type AttendanceWithStudent = AttendanceRecord & {
-  students: Pick<Student, "nim" | "name" | "class" | "dosen_pembimbing"> | null;
+  students: Pick<Student, "nim" | "name" | "gender" | "class"> | null;
 };
 
 export type ScanResult = {
