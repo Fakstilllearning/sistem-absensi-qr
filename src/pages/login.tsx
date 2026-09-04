@@ -20,12 +20,18 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-slate-50 to-emerald-50">
-      <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
+    <div
+      className="min-h-screen bg-cover bg-center bg-no-repeat relative"
+      style={{
+        backgroundImage: "url('/images/image.png')",
+      }}
+    >
+      <div className="absolute inset-0 bg-slate-900/55" />
+      <div className="relative flex min-h-screen flex-col items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
           <div className="mb-8 flex flex-col items-center gap-3 text-center">
             <BrandLockup />
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-white/90">
               Sistem absensi panitia kaderisasi berbasis QR Code
             </p>
           </div>
@@ -65,7 +71,7 @@ export function LoginPage() {
           <div className="mt-8 flex items-center justify-center">
             <LogoUpiFpok className="h-14 w-auto opacity-80" />
           </div>
-          <p className="mt-3 text-center text-xs text-slate-400">
+          <p className="mt-3 text-center text-xs text-white/70">
             HMP PJKR · FPOK · Universitas Pendidikan Indonesia
           </p>
         </div>
