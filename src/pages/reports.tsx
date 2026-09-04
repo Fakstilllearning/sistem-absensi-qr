@@ -40,7 +40,7 @@ export function ReportsPage() {
   const sessionName = (id: string) => sessions.find((s) => s.id === id)?.name ?? "—";
 
   const exportWeekly = () => {
-    const header = ["No", "NIM", "Nama", "Dosen Pembimbing", "Kelas", ...sessions.map((s) => s.name), "Total Hadir", "Total Alpa"];
+    const header = ["No", "NIM", "Nama", "Jenis Kelamin", "Kelas", ...sessions.map((s) => s.name), "Total Hadir", "Total Alpa"];
     const rows = students.map((st, i) => {
       const perSession = sessions.map((s) => {
         const rec = records.find((r) => r.student_id === st.id && r.session_id === s.id);
@@ -48,7 +48,7 @@ export function ReportsPage() {
       });
       const hadir = perSession.filter((s) => s === "HADIR").length;
       const alpa = perSession.filter((s) => s === "ALPA").length;
-      return [st.no_urut ?? i + 1, st.nim, st.name, st.dosen_pembimbing ?? "-", st.class, ...perSession, hadir, alpa];
+      return [st.no_urut ?? i + 1, st.nim, st.name, st.gender ?? "-", st.class, ...perSession, hadir, alpa];
     });
     const csv = [header, ...rows]
       .map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
@@ -100,7 +100,7 @@ export function ReportsPage() {
               <tr className="border-b border-slate-100 text-left text-xs font-semibold text-slate-500">
                 <th className="px-3 py-2">NIM</th>
                 <th className="px-3 py-2">Nama</th>
-                <th className="px-3 py-2">Dosen</th>
+                <th className="px-3 py-2">Jenis Kelamin</th>
                 <th className="px-3 py-2">Kelas</th>
                 {sessions.map((s) => (
                   <th key={s.id} className="px-3 py-2">{s.name}</th>
@@ -112,7 +112,7 @@ export function ReportsPage() {
                 <tr key={st.id}>
                   <td className="px-3 py-2 text-slate-600">{st.nim}</td>
                   <td className="px-3 py-2 font-medium text-slate-800">{st.name}</td>
-                  <td className="px-3 py-2 text-slate-600">{st.dosen_pembimbing ?? "-"}</td>
+                  <td className="px-3 py-2 text-slate-600">{st.gender ?? "-"}</td>
                   <td className="px-3 py-2 text-slate-600">{st.class}</td>
                   {sessions.map((s) => {
                     const rec = records.find((r) => r.student_id === st.id && r.session_id === s.id);
