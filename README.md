@@ -81,6 +81,9 @@ Sistem menggunakan **Google OAuth** — tidak ada login dengan email/password ma
 4. Upload file CSV.
 5. Sistem akan menampilkan preview, validasi, dan jumlah baris bermasalah.
 6. Pilih mode import (Update Existing / Insert New / Skip Existing).
+   * Update Existing — Jika NIM sudah ada di database, data mahasiswa tersebut diperbarui dengan data baru dari CSV. Jika NIM belum        ada, mahasiswa baru ditambahkan.
+   * Insert New — Hanya menambah mahasiswa baru. Jika NIM sudah ada, baris tersebut dilewati (tidak diperbarui).
+   * Skip Existing — Cek dulu apakah NIM sudah ada. Jika sudah ada, lewati. Jika belum, tambahkan sebagai mahasiswa baru.                  Perbedaannya dengan Insert New: Skip Existing mengecek eksistensi terlebih dahulu secara eksplisit sebelum insert.
 7. Klik **Konfirmasi Import**.
 
 ### 2. Membuat dan Membuka Sesi
