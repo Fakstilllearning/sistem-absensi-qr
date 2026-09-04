@@ -38,7 +38,7 @@ export function AttendancePage() {
     setLoading(true);
     let query = supabase
       .from("attendance_records")
-      .select("*, students(nim, name, class)")
+      .select("*, students(nim, name, class, gender)")
       .order("scanned_at", { ascending: false, nullsFirst: false })
       .limit(200);
     if (filterSession !== "SEMUA") query = query.eq("session_id", filterSession);
@@ -107,12 +107,12 @@ export function AttendancePage() {
 
   const exportCsv = () => {
     const rows = [
-      ["No", "NIM", "Nama", "Dosen Pembimbing", "Kelas", "Sesi", "Status", "Waktu", "Catatan"],
+      ["No", "NIM", "Nama", "Jenis Kelamin", "Kelas", "Sesi", "Status", "Waktu", "Catatan"],
       ...filtered.map((r, i) => [
         i + 1,
         r.students?.nim ?? "",
         r.students?.name ?? "",
-        r.students?.dosen_pembimbing ?? "",
+        r.students?.gender ?? "",
         r.students?.class ?? "",
         sessionName(r.session_id),
         r.status,
