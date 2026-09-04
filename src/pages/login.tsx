@@ -26,7 +26,7 @@ export function LoginPage() {
         backgroundImage: "url('/image.png')",
       }}
     >
-      <div className="absolute inset-0 bg-slate-900/100" />
+      <div className="absolute inset-0 bg-slate-900/65" />
       <div className="relative flex min-h-screen flex-col items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
           <div className="mb-8 flex flex-col items-center gap-3 text-center">
