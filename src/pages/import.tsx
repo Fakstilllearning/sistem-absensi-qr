@@ -10,7 +10,6 @@ type ParsedRow = {
   no_urut: string;
   nim: string;
   name: string;
-  dosen_pembimbing: string;
   class: string;
   group_name: string;
   gender: string;
@@ -37,7 +36,6 @@ export function ImportPage() {
     const iNoUrut = idx("no_urut") >= 0 ? idx("no_urut") : idx("no");
     const iNim = idx("nim");
     const iName = idx("name") >= 0 ? idx("name") : idx("nama");
-    const iDosen = idx("dosen_pembimbing") >= 0 ? idx("dosen_pembimbing") : idx("dosen pembimbing");
     const iClass = idx("class") >= 0 ? idx("class") : idx("kelas");
     const iGroup = idx("group") >= 0 ? idx("group") : idx("kelompok");
     const iGender = idx("gender") >= 0 ? idx("gender") : idx("jenis_kelamin");
@@ -51,13 +49,13 @@ export function ImportPage() {
       const noUrut = iNoUrut >= 0 ? cols[iNoUrut] : "";
       const nim = iNim >= 0 ? cols[iNim] : "";
       const name = iName >= 0 ? cols[iName] : "";
-      const dosen = iDosen >= 0 ? cols[iDosen] : "";
+      const gender = iGender >= 0 ? cols[iGender] : "";
       const klass = iClass >= 0 ? cols[iClass] : "";
       const errs: string[] = [];
       if (!noUrut) errs.push("No urut kosong");
       if (!nim) errs.push("NIM kosong");
       if (!name) errs.push("Nama kosong");
-      if (!dosen) errs.push("Dosen pembimbing kosong");
+      if (!gender) errs.push("Jenis kelamin kosong");
       if (!klass) errs.push("Kelas kosong");
       if (nim && seen.has(nim)) errs.push("Duplikat dalam file");
       if (nim) seen.add(nim);
@@ -67,10 +65,9 @@ export function ImportPage() {
         no_urut: noUrut,
         nim,
         name,
-        dosen_pembimbing: dosen,
         class: klass,
         group_name: iGroup >= 0 ? cols[iGroup] : "",
-        gender: iGender >= 0 ? cols[iGender] : "",
+        gender,
         year: iYear >= 0 ? cols[iYear] : "",
         errors: errs,
       });
@@ -110,7 +107,6 @@ export function ImportPage() {
         no_urut: r.no_urut ? parseInt(r.no_urut, 10) : null,
         nim: r.nim,
         name: r.name,
-        dosen_pembimbing: r.dosen_pembimbing || null,
         class: r.class,
         group_name: r.group_name || null,
         gender: r.gender || null,
@@ -183,7 +179,7 @@ export function ImportPage() {
           {fileName ? `File: ${fileName}` : "Pilih file CSV"}
         </p>
         <p className="mb-4 mt-1 text-xs text-slate-500">
-          Kolom wajib: no_urut, nim, nama, dosen_pembimbing, kelas. Kolom lama tetap didukung.
+          Kolom wajib: no_urut, nim, nama, jenis_kelamin, kelas. Kolom opsional: group, year.
         </p>
         <Button onClick={() => fileRef.current?.click()} loading={parsing}>
           <Upload className="w-4 h-4" /> Pilih File CSV
@@ -234,7 +230,7 @@ export function ImportPage() {
                   <th className="px-3 py-2">No</th>
                   <th className="px-3 py-2">NIM</th>
                   <th className="px-3 py-2">Nama</th>
-                  <th className="px-3 py-2">Dosen Pembimbing</th>
+                  <th className="px-3 py-2">Jenis Kelamin</th>
                   <th className="px-3 py-2">Kelas</th>
                   <th className="px-3 py-2">Status</th>
                 </tr>
@@ -246,7 +242,7 @@ export function ImportPage() {
                     <td className="px-3 py-2 text-slate-700">{r.no_urut}</td>
                     <td className="px-3 py-2 text-slate-700">{r.nim}</td>
                     <td className="px-3 py-2 text-slate-700">{r.name}</td>
-                    <td className="px-3 py-2 text-slate-700">{r.dosen_pembimbing}</td>
+                    <td className="px-3 py-2 text-slate-700">{r.gender}</td>
                     <td className="px-3 py-2 text-slate-700">{r.class}</td>
                     <td className="px-3 py-2">
                       {r.errors.length === 0 ? (
@@ -285,7 +281,7 @@ export function ImportPage() {
       ) : null}
 
       {rows.length === 0 && !parsing && !summary ? (
-        <EmptyState title="Belum ada file" hint="Gunakan kolom no_urut, nim, nama, dosen_pembimbing, dan kelas." />
+        <EmptyState title="Belum ada file" hint="Gunakan kolom no_urut, nim, nama, jenis_kelamin, dan kelas." />
       ) : null}
     </div>
   );
