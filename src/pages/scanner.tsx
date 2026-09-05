@@ -37,11 +37,35 @@ export function ScannerPage() {
       lockRef.current = true;
       setFeedback({ kind: "idle" });
 
-      try {
-        const { data, error } = await supabase.rpc("record_attendance", {
+      const callRpc = async () => {
+        return supabase.rpc("record_attendance", {
           p_qr_token: decodedText.trim(),
           p_session_id: session.id,
         });
+      };
+
+      type RpcResult = Awaited<ReturnType<typeof callRpc>>;
+
+      try {
+        let data: RpcResult["data"] = null;
+        let error: RpcResult["error"] = null;
+        let lastErr: unknown = null;
+
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const result = await callRpc();
+          data = result.data;
+          error = result.error;
+          if (!error || error.message.includes("UNAUTHORIZED") || error.message.includes("SESSION_CLOSED") || error.message.includes("INVALID_QR")) {
+            lastErr = null;
+            break;
+          }
+          lastErr = error;
+          if (attempt < 2) await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+        }
+
+        if (lastErr) {
+          error = lastErr as typeof error;
+        }
 
         if (error) {
           const msg = error.message;
@@ -52,7 +76,7 @@ export function ScannerPage() {
           } else if (msg.includes("INVALID_QR")) {
             setFeedback({ kind: "invalid" });
           } else {
-            setFeedback({ kind: "network", message: "Tidak dapat menyimpan absensi. Periksa koneksi internet." });
+            setFeedback({ kind: "network", message: "Tidak dapat terhubung ke server. Pastikan ada koneksi internet (WiFi atau data seluler) lalu coba pindai ulang." });
           }
         } else if (data && data.length > 0) {
           const row = data[0] as ScanResult;
@@ -65,7 +89,7 @@ export function ScannerPage() {
           }
         }
       } catch {
-        setFeedback({ kind: "network", message: "Koneksi bermasalah. Absensi belum tersimpan." });
+        setFeedback({ kind: "network", message: "Koneksi terputus saat menyimpan absensi. Periksa koneksi internet Anda lalu pindai ulang QR Code." });
       } finally {
         setTimeout(() => {
           lockRef.current = false;
