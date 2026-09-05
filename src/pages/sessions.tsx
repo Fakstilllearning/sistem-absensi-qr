@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Lock, Unlock, CalendarDays } from "lucide-react";
+import { Plus, Lock, Unlock, CalendarDays, Trash2 } from "lucide-react";
 import { supabase, type AttendanceSession } from "@/lib/supabase";
 import { useAuth } from "@/lib/auth-context";
 import { useToasts } from "@/lib/use-toasts";
@@ -12,6 +12,8 @@ export function SessionsPage() {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [closeTarget, setCloseTarget] = useState<AttendanceSession | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AttendanceSession | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [form, setForm] = useState({ name: "", date: new Date().toISOString().slice(0, 10) });
 
   const load = async () => {
@@ -79,6 +81,19 @@ export function SessionsPage() {
     }
   };
 
+  const deleteSession = async (s: AttendanceSession) => {
+    setDeleting(true);
+    const { error: err } = await supabase.from("attendance_sessions").delete().eq("id", s.id);
+    setDeleting(false);
+    if (err) {
+      error("Gagal menghapus sesi.");
+      return;
+    }
+    success(`Sesi "${s.name}" berhasil dihapus.`);
+    setDeleteTarget(null);
+    await load();
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -124,6 +139,9 @@ export function SessionsPage() {
                     <Lock className="w-4 h-4" /> Tutup Sesi
                   </Button>
                 ) : null}
+                <Button size="sm" variant="ghost" onClick={() => setDeleteTarget(s)} className="text-red-600 hover:bg-red-50">
+                  <Trash2 className="w-4 h-4" /> Hapus
+                </Button>
               </div>
             </div>
           ))}
@@ -167,6 +185,28 @@ export function SessionsPage() {
                 Ya, Tutup Sesi
               </Button>
               <Button variant="secondary" onClick={() => setCloseTarget(null)}>Batal</Button>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
+
+      <Modal
+        open={!!deleteTarget}
+        title="Hapus Sesi"
+        onClose={() => setDeleteTarget(null)}
+      >
+        {deleteTarget ? (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-red-50 p-4 ring-1 ring-red-200">
+              <p className="text-sm text-red-700">
+                Sesi <b>{deleteTarget.name}</b> dan semua data absensi terkait akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => deleteSession(deleteTarget)} loading={deleting} className="flex-1 bg-red-600 hover:bg-red-700">
+                Ya, Hapus Sesi
+              </Button>
+              <Button variant="secondary" onClick={() => setDeleteTarget(null)} className="flex-1">Batal</Button>
             </div>
           </div>
         ) : null}
