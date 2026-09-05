@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
+import { Trash2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import { Badge, EmptyState, Spinner } from "@/components/ui";
+import { hasRole } from "@/lib/auth";
+import { useAuth } from "@/lib/auth-context";
+import { useToasts } from "@/lib/use-toasts";
+import { Badge, Button, EmptyState, Modal, Spinner } from "@/components/ui";
 
 type AuditLog = {
   id: string;
@@ -15,31 +19,60 @@ type AuditLog = {
 type ProfileMap = Record<string, string>;
 
 export function AuditPage() {
+  const { profile } = useAuth();
+  const { success, error } = useToasts();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [profiles, setProfiles] = useState<ProfileMap>({});
   const [loading, setLoading] = useState(true);
+  const [showClear, setShowClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
+
+  const isAdmin = hasRole(profile, "ADMIN");
+
+  const load = async () => {
+    setLoading(true);
+    const [{ data: l }, { data: p }] = await Promise.all([
+      supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(200),
+      supabase.from("profiles").select("id, name"),
+    ]);
+    setLogs((l as AuditLog[]) ?? []);
+    const map: ProfileMap = {};
+    (p as { id: string; name: string }[] ?? []).forEach((row) => { map[row.id] = row.name; });
+    setProfiles(map);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    (async () => {
-      const [{ data: l }, { data: p }] = await Promise.all([
-        supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(200),
-        supabase.from("profiles").select("id, name"),
-      ]);
-      setLogs((l as AuditLog[]) ?? []);
-      const map: ProfileMap = {};
-      (p as { id: string; name: string }[] ?? []).forEach((row) => { map[row.id] = row.name; });
-      setProfiles(map);
-      setLoading(false);
-    })();
+    load();
   }, []);
+
+  const clearLogs = async () => {
+    setClearing(true);
+    const { data: deleted, error: err } = await supabase.from("audit_logs").delete().neq("id", "00000000-0000-0000-0000-000000000000").select("id");
+    setClearing(false);
+    setShowClear(false);
+    if (err) {
+      error("Gagal menghapus audit log.");
+      return;
+    }
+    success(`${deleted?.length ?? 0} log berhasil dihapus.`);
+    await load();
+  };
 
   if (loading) return <Spinner label="Memuat audit log…" />;
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Audit Log</h1>
-        <p className="text-sm text-slate-500">Riwayat aktivitas penting dalam sistem.</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Audit Log</h1>
+          <p className="text-sm text-slate-500">Riwayat aktivitas penting dalam sistem.</p>
+        </div>
+        {isAdmin ? (
+          <Button variant="ghost" onClick={() => setShowClear(true)} className="text-red-600 hover:bg-red-50">
+            <Trash2 className="w-4 h-4" /> Hapus Semua Log
+          </Button>
+        ) : null}
       </div>
 
       {logs.length === 0 ? (
@@ -69,6 +102,25 @@ export function AuditPage() {
           ))}
         </ul>
       )}
+
+      <Modal open={showClear} title="Hapus Semua Audit Log" onClose={() => setShowClear(false)}>
+        <div className="space-y-4">
+          <div className="rounded-xl bg-red-50 p-4 ring-1 ring-red-200">
+            <p className="flex items-center gap-2 text-sm font-semibold text-red-700">
+              <AlertTriangle className="w-4 h-4" /> Peringatan
+            </p>
+            <p className="mt-1 text-sm text-red-700">
+              Semua riwayat aktivitas akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={clearLogs} loading={clearing} className="flex-1 bg-red-600 hover:bg-red-700">
+              Ya, Hapus Semua Log
+            </Button>
+            <Button variant="secondary" onClick={() => setShowClear(false)} className="flex-1">Batal</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
