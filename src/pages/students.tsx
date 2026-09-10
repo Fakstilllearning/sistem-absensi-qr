@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, QrCode, RefreshCw, Ban, Printer, Download } from "lucide-react";
+import { QrCode, RefreshCw, Ban, Printer, Download } from "lucide-react";
 import QRCode from "qrcode";
+import { jsPDF } from "jspdf";
 import { supabase, type Student } from "@/lib/supabase";
 import { hasRole } from "@/lib/auth";
 import { useAuth } from "@/lib/auth-context";
@@ -18,6 +19,7 @@ export function StudentsPage() {
   const [selected, setSelected] = useState<Student | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [qrBusy, setQrBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const isAdmin = hasRole(profile, "ADMIN");
 
@@ -84,31 +86,66 @@ export function StudentsPage() {
     }
   };
 
-  const exportCsv = () => {
+  // Layout kartu: grid 2 kolom x 4 baris per halaman A4, ukuran dalam mm.
+  const CARD_W = 90;
+  const CARD_H = 65;
+  const GAP_X = 5;
+  const GAP_Y = 5;
+  const MARGIN = 10;
+  const COLS = 2;
+  const ROWS = 4;
+  const PER_PAGE = COLS * ROWS;
+  const QR_SIZE = 45;
+
+  const exportQrPdf = async () => {
     if (filtered.length === 0) {
       error("Tidak ada data mahasiswa untuk diekspor.");
       return;
     }
-    const escapeCell = (v: string) => {
-      const needsQuotes = /[",\n]/.test(v);
-      const escaped = v.replace(/"/g, '""');
-      return needsQuotes ? `"${escaped}"` : escaped;
-    };
-    const header = ["NIM", "Nama", "QR"];
-    const rows = filtered.map((s) => [s.nim, s.name, s.qr_token]);
-    const csv = [header, ...rows].map((row) => row.map(escapeCell).join(",")).join("\r\n");
-    // Prefix BOM supaya karakter non-ASCII tetap benar saat dibuka di Excel.
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    const suffix = kelas === "SEMUA" ? "semua-kelas" : kelas;
-    a.download = `mahasiswa-qr_${suffix}_${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    success(`${filtered.length} data mahasiswa berhasil diekspor ke CSV.`);
+    setExporting(true);
+    try {
+      const qrDataUrls = await Promise.all(
+        filtered.map((s) =>
+          QRCode.toDataURL(s.qr_token, { width: 240, margin: 1, color: { dark: "#0f172a", light: "#ffffff" } })
+        )
+      );
+
+      const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+      filtered.forEach((s, i) => {
+        const posInPage = i % PER_PAGE;
+        if (i > 0 && posInPage === 0) doc.addPage();
+        const col = posInPage % COLS;
+        const row = Math.floor(posInPage / COLS);
+        const x = MARGIN + col * (CARD_W + GAP_X);
+        const y = MARGIN + row * (CARD_H + GAP_Y);
+
+        doc.setDrawColor(203, 213, 225);
+        doc.roundedRect(x, y, CARD_W, CARD_H, 2, 2);
+        doc.addImage(qrDataUrls[i], "PNG", x + 4, y + (CARD_H - QR_SIZE) / 2, QR_SIZE, QR_SIZE);
+
+        const textX = x + 4 + QR_SIZE + 4;
+        const textMaxW = CARD_W - QR_SIZE - 12;
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9.5);
+        doc.text(doc.splitTextToSize(s.name, textMaxW).slice(0, 3), textX, y + 16);
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        doc.text("NIM", textX, y + 40);
+        doc.text(s.nim, textX, y + 45);
+        doc.text(`Kelas: ${s.class}`, textX, y + 53);
+      });
+
+      const suffix = kelas === "SEMUA" ? "semua-kelas" : kelas;
+      doc.save(`qr-mahasiswa_${suffix}_${new Date().toISOString().slice(0, 10)}.pdf`);
+      success(`${filtered.length} QR mahasiswa berhasil diekspor ke PDF.`);
+    } catch {
+      error("Gagal mengekspor QR ke PDF.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -119,8 +156,8 @@ export function StudentsPage() {
           <p className="text-sm text-slate-500">Daftar peserta kaderisasi dan QR Code.</p>
         </div>
         {isAdmin ? (
-          <Button variant="secondary" onClick={exportCsv}>
-            <Download className="w-4 h-4" /> Export CSV
+          <Button variant="secondary" onClick={exportQrPdf} loading={exporting}>
+            <Download className="w-4 h-4" /> Export QR (PDF)
           </Button>
         ) : null}
       </div>
