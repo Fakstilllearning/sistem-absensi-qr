@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Search, QrCode, RefreshCw, Ban, Printer } from "lucide-react";
+import { Search, QrCode, RefreshCw, Ban, Printer, Download } from "lucide-react";
 import QRCode from "qrcode";
 import { supabase, type Student } from "@/lib/supabase";
 import { hasRole } from "@/lib/auth";
@@ -84,11 +84,45 @@ export function StudentsPage() {
     }
   };
 
+  const exportCsv = () => {
+    if (filtered.length === 0) {
+      error("Tidak ada data mahasiswa untuk diekspor.");
+      return;
+    }
+    const escapeCell = (v: string) => {
+      const needsQuotes = /[",\n]/.test(v);
+      const escaped = v.replace(/"/g, '""');
+      return needsQuotes ? `"${escaped}"` : escaped;
+    };
+    const header = ["NIM", "Nama", "QR"];
+    const rows = filtered.map((s) => [s.nim, s.name, s.qr_token]);
+    const csv = [header, ...rows].map((row) => row.map(escapeCell).join(",")).join("\r\n");
+    // Prefix BOM supaya karakter non-ASCII tetap benar saat dibuka di Excel.
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const suffix = kelas === "SEMUA" ? "semua-kelas" : kelas;
+    a.download = `mahasiswa-qr_${suffix}_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    success(`${filtered.length} data mahasiswa berhasil diekspor ke CSV.`);
+  };
+
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Mahasiswa</h1>
-        <p className="text-sm text-slate-500">Daftar peserta kaderisasi dan QR Code.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Mahasiswa</h1>
+          <p className="text-sm text-slate-500">Daftar peserta kaderisasi dan QR Code.</p>
+        </div>
+        {isAdmin ? (
+          <Button variant="secondary" onClick={exportCsv}>
+            <Download className="w-4 h-4" /> Export CSV
+          </Button>
+        ) : null}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
